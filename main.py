@@ -1,5 +1,6 @@
 import random
 import os
+from sys import exit
 
 char = None
 
@@ -7,7 +8,7 @@ stage = 1
 enemyeasy = None
 enemyboss = None
 
-# Characters to select
+# Character and Enemy
 class player:
     def __init__(self, hp, maxhp, mp, maxmp, heal, crit, damage, cost, healcost, sleep):
         self.hp = hp
@@ -22,32 +23,32 @@ class player:
         self.sleep = sleep
     
     def attackmove(self):
-        if self.mp >= self.cost:
-            self.mp - self.cost = self.mp
-            crithit = random.randomint(1,20)
-            if crithit > self.crit:
-                global attack
-                attack = self.damage * 2
-                print(f"Critical hit! You've done {attack} damage!")
-            else:
-                attack = self.damage
-                print(f"You've done {attack} damage!")
+        self.mp -= self.cost
+        crithit = random.randomint(1,20)
+        if crithit > self.crit:
+            global attack
+            attack = self.damage * 2
+            print(f"Critical hit! You've done {attack} damage!")
         else:
-            print("Not enough MP to do attack!")
+            attack = self.damage
+            print(f"You've done {attack} damage!")
 
     def healmove(self):
-        if self.mp >= self.healcost:
-            self.hp + self.heal = self.hp
-            print(f"You heal yourself for {self.hp} HP!")
-            if self.hp > self.maxhp:
-                self.hp = self.maxhp
-        else:
-            print("Not enough MP to heal!")
+        self.hp += self.heal
+        print(f"You heal yourself for {self.hp} HP!")
+        if self.hp > self.maxhp:
+            self.hp = self.maxhp
     
     def sleepmove(self):
-        self.mp + self.sleep = self.mp
+        self.mp += self.sleep
         if self.mp > self.maxmp:
             self.mp = self.maxmp
+    
+    def stats(self):
+        print("- Character Status - ")
+        print("HP:", self.hp, "/", self.maxhp)
+        print("MP:", self.mp, "/", self.maxmp)
+
 
 class enemy:
     def __init__(self, hp, maxhp, mp, maxmp, miss, damage, cost):
@@ -59,28 +60,66 @@ class enemy:
         self.damage = damage
         self.cost = cost
 
-        def enemyattack(self):
-            if self.mp >= self.cost:
-                self.mp - self.cost = self.mp
-                missed = random.randomint(1,20)
-                if missed < self.miss:
-                    global attack
-                    attack = self.damage * 2
-                    print(f"Critical hit! You've done {attack} damage!")
-                else:
-                    attack = self.damage
-                    print(f"You've done {attack} damage!")
+    def enemyattackmove(self):
+        if self.mp >= self.cost:
+            self.mp -= self.cost
+            missed = random.randomint(1,20)
+            if missed < self.miss:
+                global enemyattack
+                enemyattack = 0
+                print(f"The enemy missed their attack!")
             else:
-                print("ERROR!")
+                enemyattack = self.damage
+                print(f"The enemy did {enemyattack} damage!")
+        else:
+            print("ERROR! ")
 
-        def enemysleep(self):
-            self.mp + self.sleep = self.mp
-            if self.mp > self.maxmp:
-                self.mp = self.maxmp
-
+    def enemysleepmove(self):
+        self.mp += self.sleep
+        if self.mp > self.maxmp:
+            self.mp = self.maxmp
+        
+    def enemyai(self):
+        if self.hp > 0:
+            if self.cost > self.mp:
+                enemy.enemysleepmove()
+            elif self.cost <= self.mp:
+                enemy.enemyattackmove()
+            else:
+                print("ERROR! Enemy couldn't decide between sleeping or attacking! Report this!")
+        else:
+            global stage
+            stage += 1
+            print("You won! Next stage!")
+            input("> ")
+    
+# -- -- --
 
 def clear():
     os.system('cls')
+
+def gamemenu():
+    clear()
+    print("- Python RPG -\n")
+    print("[1] - START")
+    print("[2] - ABOUT")
+    print("[3] - EXIT")
+    try:
+        menu = int(input("> "))
+    except:
+        gamemenu()
+    if menu == 1 :
+        clear()
+        start()
+    elif menu == 2:
+        clear()
+        about()
+    elif menu == 3:
+        clear()
+        print("Bye!")
+    else:
+        print("Unknown command! Type a number!")
+        gamemenu()
 
 def charselect():
     clear()
@@ -90,37 +129,23 @@ def charselect():
     print("[0] - Back to Menu")
 
     select = int(input("> "))
-    if select == 1:
-        char = player(10,10,10,10,2,3,3) # Base Character
-    elif select == 0:   
+    try:
+        if select == 1:
+            # Character: player(hp,maxhp,mp,maxmp,heal,crit,damage,cost,healcost,sleep)
+            char = player(10, 10, 10, 10, 2, 3, 3, 4, 5, 8) # Base Character
+        elif select == 0:   
+            clear()
+            gamemenu()
+        else:
+            print("Unknown command! Type a number!")
+            charselect()
+        battle()
+    except:
         clear()
-        gamemenu()
-
-def stats():
-    print("- Character Status - ")
-    print("HP:", char.hp, "/", char.maxhp)
-    print("MP:", char.mp, "/", char.maxmp)
-
-def gamemenu():
-    clear()
-    print("- Python RPG -\n")
-    print("[1] - START")
-    print("[2] - ABOUT")
-    print("[3] - EXIT")
-    menu = int(input("> "))
-    print(menu)
-
-    if menu == 1 :
-        clear()
-        start()
-    elif menu == 2:
-        clear()
-        about()
-    elif menu == 3:
-        print("Bye!")
-    else:
-        print("Unknown command! Type a number!")
-        gamemenu()
+        print("ERROR! Something went wrong whle selecting your character!")
+        print("Go back to character selecting")
+        input("> ")
+        charselect()
 
 def about():
     clear()
@@ -129,7 +154,6 @@ def about():
     print("I hope you enjoy a bit of this game, the same way")
     print("i've enjoyed making it! :3\n")
     input("> ")
-    clear()
     gamemenu()
 
 def battle():
@@ -138,12 +162,46 @@ def battle():
     elif stage == 3:
         bossbattle()
 
+def playerturn():
+    clear()
+    print("Your turn!")
+    char.stats()
+    print("Select a move:")
+    print(f"[1] Attack [-{char.cost} MP]")
+    print(f"[2] Sleep [+{char.sleep} MP]")
+    if char.heal >= 1:
+        global healer
+        healer = 1
+        print(f"[3] Heal [+{char.heal} -{char.healcost}]")
+    healer = 0
+    playeroptions()
+
+def playeroptions():
+    turn = input("> ")
+    if turn == 1:
+        if char.mp >= char.cost:
+            char.attackmove()
+        else:
+            print("You don't have enough MP for this move!")
+    elif turn == 2:
+        if char.mp != char.maxmp:
+            char.sleepmove()
+    elif turn == 3 and healer == 1:
+        if char.mp >= char.healcost:
+            char.healmove()
+        else:
+            print("You don't have enough MP for this move!")
+    else:
+        clear()
+        playerturn()
+
+# Enemy: enemy(hp, maxhp, mp, maxmp, miss, damage, cost)
 def enemybattle():
-    enemyeasy = enemy(5,5,5,10,4)
+    enemyeasy = enemy(5,5,8,8,6,4,3)
+    playerturn()
 
 def bossbattle():
-    enemyboss = enemy(8,8,8,3,6)
-    
+    enemyboss = enemy(8,8,8,8,3,5)
 
 # Main function to move the game
 def start():
