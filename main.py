@@ -3,7 +3,6 @@ import os
 from sys import exit
 
 char = None
-
 stage = 1
 enemyeasy = None
 enemyboss = None
@@ -93,6 +92,15 @@ class enemy:
             print("You won! Next stage!")
             input("> ")
     
+    def stats(self):
+        if stage // 3 == 0:
+            print("-*- Boss Status -*-")
+            print("HP:", self.hp, "/", self.maxhp)
+            print("MP:", self.mp, "/", self.maxmp)
+        else:
+            print("- Enemy Status - ")
+            print("HP:", self.hp, "/", self.maxhp)
+            print("MP:", self.mp, "/", self.maxmp)
 # -- -- --
 
 def clear():
@@ -128,24 +136,33 @@ def charselect():
     print("[1] - Basic Character - 10HP 10MP")
     print("[0] - Back to Menu")
 
-    select = int(input("> "))
-    try:
-        if select == 1:
-            # Character: player(hp,maxhp,mp,maxmp,heal,crit,damage,cost,healcost,sleep)
-            char = player(10, 10, 10, 10, 2, 3, 3, 4, 5, 8) # Base Character
-        elif select == 0:   
-            clear()
-            gamemenu()
-        else:
-            print("Unknown command! Type a number!")
-            charselect()
-        battle()
-    except:
+    select = input("> ")
+    select = int(select)
+    #try:
+    if select == 1:
+        # Character: player(hp,maxhp,mp,maxmp,heal,crit,damage,cost,healcost,sleep)
+        char = player(10, 10, 10, 10, 2, 3, 3, 4, 5, 8) # Base Character
+    elif select == 0:   
         clear()
-        print("ERROR! Something went wrong whle selecting your character!")
-        print("Go back to character selecting")
+        gamemenu()
+    else:
+        print("Unknown command! Type a number!")
         input("> ")
         charselect()
+
+    # Difficulty selection ( add settings for this later )
+    # Enemy: enemy(hp, maxhp, mp, maxmp, miss, damage, cost)
+    global enemyeasy
+    global enemyboss
+    enemyeasy = enemy(5, 5, 8, 8, 6, 4, 3)
+    enemyboss = enemy(8, 8, 8, 8, 3, 5, 3)
+    battle()
+    #except:
+        #clear()
+        #print("ERROR! Something went wrong while selecting your character!")
+        #print("Press [ENTER] to go back to character selecting")
+        #input("> ")
+        #charselect()
 
 def about():
     clear()
@@ -157,15 +174,19 @@ def about():
     gamemenu()
 
 def battle():
-    if stage == 1:
-        enemybattle()
-    elif stage == 3:
-        bossbattle()
+    global enemytype
+    if stage // 3 == 0:
+        enemytype = enemyboss
+    else:
+        enemytype = enemyeasy
+    playerturn()
+        
 
 def playerturn():
     clear()
     print("Your turn!")
     char.stats()
+    enemytype.stats()
     print("Select a move:")
     print(f"[1] Attack [-{char.cost} MP]")
     print(f"[2] Sleep [+{char.sleep} MP]")
@@ -194,14 +215,6 @@ def playeroptions():
     else:
         clear()
         playerturn()
-
-# Enemy: enemy(hp, maxhp, mp, maxmp, miss, damage, cost)
-def enemybattle():
-    enemyeasy = enemy(5,5,8,8,6,4,3)
-    playerturn()
-
-def bossbattle():
-    enemyboss = enemy(8,8,8,8,3,5)
 
 # Main function to move the game
 def start():
